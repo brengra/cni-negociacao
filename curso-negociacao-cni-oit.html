@@ -1022,7 +1022,7 @@
 const LIMITE_VAGAS = Infinity;
 const DEADLINE = new Date('2026-07-17T23:59:59-03:00'); // Prazo final de inscrição (horário de Brasília)
 const ADMIN_PASS      = 'cni@oit2025';   // ← ALTERE ESTA SENHA
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxmll8Rj32OiUwOg_0MkUCT9mg6wHGgDcHqrMwxukgEWgBa6B9o0LmElf7BP53_t6ZF/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby898zhjDMXg_Mk2kGIohobqKP2jsXb74AB_4y9NmZCqD8lL9Gv4FZeySaSsdqM1_EJ/exec';
 
 // ═══════════════════════════════════════════
 // DADOS LOCAIS (localStorage — substitua por API/backend em produção)
@@ -1215,11 +1215,24 @@ function doLogin() {
 // ═══════════════════════════════════════════
 // ADMIN — RENDER
 // ═══════════════════════════════════════════
-function renderAdmin() {
-  seedInitialData();
+async function renderAdmin() {
+  await fetchFromSheets();
   renderStats();
   renderTable();
   renderCharts();
+}
+
+async function fetchFromSheets() {
+  if (!APPS_SCRIPT_URL) return;
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + '?action=getAll');
+    const data = await res.json();
+    if (data.ok && data.inscricoes && data.inscricoes.length > 0) {
+      saveData(data.inscricoes);
+    }
+  } catch(err) {
+    console.warn('Sheets offline, usando dados locais:', err);
+  }
 }
 
 function renderStats() {
