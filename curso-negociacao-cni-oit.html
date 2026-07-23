@@ -1020,7 +1020,7 @@
 // CONFIGURAÇÃO
 // ═══════════════════════════════════════════
 const LIMITE_VAGAS = Infinity;
-const DEADLINE = new Date('2026-07-17T23:59:59-03:00'); // Prazo final de inscrição (horário de Brasília)
+const DEADLINE = new Date('2099-12-31T23:59:59-03:00'); // Sem prazo definido
 const ADMIN_PASS      = 'cni@oit2025';   // ← ALTERE ESTA SENHA
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby898zhjDMXg_Mk2kGIohobqKP2jsXb74AB_4y9NmZCqD8lL9Gv4FZeySaSsdqM1_EJ/exec';
 
@@ -1670,6 +1670,59 @@ async function renderD3Map(ufMap, maxUF) {
   });
 }
 
+
+// ═══════════════════════════════════════════
+// LIMPAR DADOS DE TESTE
+// ═══════════════════════════════════════════
+function confirmClearTestData() {
+  const dados = getData();
+  if (dados.length === 0) {
+    alert('Não há dados salvos localmente neste navegador.');
+    return;
+  }
+  const ok = confirm(`Isso vai apagar ${dados.length} inscrição(ões) salva(s) localmente neste navegador (dados de teste).\n\nIsso NÃO afeta a planilha do Google Sheets — apenas o cache local deste computador.\n\nDeseja continuar?`);
+  if (!ok) return;
+  localStorage.removeItem('inscricoes_cni');
+  alert('Dados de teste removidos! A página será recarregada.');
+  location.reload();
+}
+
+// ═══════════════════════════════════════════
+// EXPORTAR EXCEL
+// ═══════════════════════════════════════════
+async function exportExcel() {
+  await fetchFromSheets();
+  const dados = getData();
+  if (dados.length === 0) {
+    alert('Nenhuma inscrição encontrada para exportar.');
+    return;
+  }
+  const cols = ['Protocolo','Entidade','UF','Nome','Cargo','Tempo (anos)','Formação','E-mail','Telefone','Experiência em Negociação','Relato','Data de Inscrição'];
+  const rows = dados.map(d => [
+    d.proto, d.entidade, d.uf || '', d.nome, d.cargo,
+    d.tempo, d.formacao, d.email, d.telefone,
+    d.experiencia, d.relato || '',
+    d.ts ? new Date(+d.ts).toLocaleString('pt-BR') : ''
+  ].map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(';'));
+
+  const bom = '\uFEFF';
+  const csv = bom + [cols.join(';'), ...rows].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `inscricoes_negociacao_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  seedInitialData();
+  updateVagasCounter();
+});
 </script>
 
 <div class="map-tooltip" id="mapTooltip"></div>
